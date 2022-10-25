@@ -1,4 +1,6 @@
 use argh::FromArgs;
+use reqwest::{header, Client};
+use std::collections::HashMap;
 
 fn default_token_path() -> String {
     String::from("~/.lino_token")
@@ -14,7 +16,8 @@ struct Args {
     message: Option<String>,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args: Args = argh::from_env();
 
     fn read_stdin() -> String {
@@ -31,5 +34,22 @@ fn main() {
         None => read_stdin(),
     };
 
-    dbg!(message);
+    send(message).await.unwrap();
+}
+
+async fn send(message: String) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let token = "Bearer [token]"; // TODO
+    let url = "https://notify-api.line.me/api/notify";
+
+    let mut params = HashMap::new();
+    params.insert("message", &message);
+
+    let mut head = header::HeaderMap::new();
+    let token = header::HeaderValue::from_static(token);
+    head.insert("Authorization", token);
+
+    let client = Client::new();
+    client.post(url).headers(head).form(&params).send().await?;
+
+    Ok(())
 }
