@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use argh::FromArgs;
 use reqwest::{header, Client};
 use std::collections::HashMap;
@@ -77,7 +78,11 @@ async fn send(message: String, token: String) -> anyhow::Result<()> {
     head.insert("Authorization", token);
 
     let client = Client::new();
-    client.post(url).headers(head).form(&params).send().await?;
+    let response = client.post(url).headers(head).form(&params).send().await?;
 
-    Ok(())
+    match response.status() {
+        s if s.is_success() => Ok(()),
+        s if s.is_server_error() => Err(anyhow!("server error")),
+        _ => Err(anyhow!("client error")),
+    }
 }
