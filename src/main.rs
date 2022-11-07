@@ -45,7 +45,7 @@ fn read_file(path: String) -> Result<String, std::io::Error> {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+async fn main() -> anyhow::Result<()> {
     let args: Args = argh::from_env();
 
     let message = match args.message {
@@ -63,10 +63,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     Ok(())
 }
 
-async fn send(
-    message: String,
-    token: String,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+async fn send(message: String, token: String) -> anyhow::Result<()> {
     // referred to https://zenn.dev/alfina2538/articles/b2de12cdbbf30a
 
     let token = format!("Bearer {}", token.clone());
