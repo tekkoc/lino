@@ -32,6 +32,8 @@ fn read_file(path: String) -> Result<String, std::io::Error> {
     use std::fs::File;
     use std::io::prelude::*;
 
+    let path: String = shellexpand::tilde(&path).into();
+
     let mut f = File::open(path)?;
 
     let mut content = String::new();
