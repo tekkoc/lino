@@ -9,43 +9,72 @@ fn default_token_path() -> String {
 #[derive(FromArgs, PartialEq, Debug)]
 /// LINE Notify command.
 struct Args {
-    /// LINE Notify access token file path.
-    #[argh(option, short = 't', default = "default_token_path()")]
-    token: String,
+    /// LINE Notify access token file path (default="~/.lino_token").
+    #[argh(option, short = 'f', default = "default_token_path()")]
+    file: String,
+    /// LINE Notify access token.
+    #[argh(option, short = 't')]
+    token: Option<String>,
     #[argh(positional)]
     message: Option<String>,
 }
 
+fn read_stdin() -> String {
+    use std::io::stdin;
+    use std::io::Read;
+
+    let mut buffer = String::new();
+    stdin().read_to_string(&mut buffer).unwrap();
+    buffer
+}
+
+fn read_file(path: String) -> Result<String, std::io::Error> {
+    use std::fs::File;
+    use std::io::prelude::*;
+
+    let mut f = File::open(path)?;
+
+    let mut content = String::new();
+    f.read_to_string(&mut content)?;
+
+    let content = content.trim().to_string();
+
+    Ok(content)
+}
+
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let args: Args = argh::from_env();
-
-    fn read_stdin() -> String {
-        use std::io::stdin;
-        use std::io::Read;
-
-        let mut buffer = String::new();
-        stdin().read_to_string(&mut buffer).unwrap();
-        buffer
-    }
 
     let message = match args.message {
         Some(m) => m,
         None => read_stdin(),
     };
 
-    send(message).await.unwrap();
+    let token = match (args.token, args.file) {
+        (Some(t), _) => t,
+        (None, file) => read_file(file)?,
+    };
+
+    send(message, token).await?;
+
+    Ok(())
 }
 
-async fn send(message: String) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let token = "Bearer [token]"; // TODO
+async fn send(
+    message: String,
+    token: String,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    // referred to https://zenn.dev/alfina2538/articles/b2de12cdbbf30a
+
+    let token = format!("Bearer {}", token.clone());
     let url = "https://notify-api.line.me/api/notify";
 
     let mut params = HashMap::new();
     params.insert("message", &message);
 
     let mut head = header::HeaderMap::new();
-    let token = header::HeaderValue::from_static(token);
+    let token = header::HeaderValue::from_str(&token)?;
     head.insert("Authorization", token);
 
     let client = Client::new();
