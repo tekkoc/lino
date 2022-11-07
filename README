@@ -1,0 +1,19 @@
+# LINO
+
+LINE Notify を呼び出すコマンド。
+
+## 使い方
+
+```
+lino "通知したいメッセージ"
+echo "hoge" | lino
+```
+
+デフォルトでは `~/.lino_token` を LINE Notify のアクセストークンとして使用します。
+
+```
+lino "message" -t "[アクセストークン]"
+lino "message" -f "~/.lino_other_token"
+```
+
+ファイルまたはオプションでアクセストークンを指定できます。
